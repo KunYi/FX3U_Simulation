@@ -15,9 +15,9 @@ connection test passed
 
 Screen shot
 ---
-
 install [com0com](https://sourceforge.net/projects/com0com/)
-![Device Manager](Pictures\DeviceManager.png "Dvice Manager")
+
+![Dvice Manager](Pictures/DeviceManager.PNG  "Dvice Manager")
 
 
 Connection Test
@@ -25,7 +25,13 @@ Connection Test
 ![Result](Pictures/Run_DetectPLC_EN.png "Result")
 
 
-[Another Testing Video clip on Youtube](https://youtu.be/r_XOcbTEAzA "Another testing")
+Another Testing
+---
+![Another testing video clip, play on github](https://github.com/KunYi/FX3U_Simulation/blob/master/Videos/2022-04-26%2017-09-01.mp4?raw=true)
+
+or
+
+[Another Testing Video clip, play on Youtube](https://youtu.be/r_XOcbTEAzA "Another testing")
 
 
 Build tools
