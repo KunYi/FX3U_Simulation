@@ -7,6 +7,9 @@
 #include <iomanip>
 #include "RxProc.h"
 
+// Want to open communcation port
+#define  LINK_COMPORT L"COM4"
+
 int main()
 {
     std::cout << "FX3 Simulation Application\n";
@@ -18,7 +21,7 @@ int main()
     OVERLAPPED osEvent = { 0 };
     OVERLAPPED osWrite = { 0 };
     const DWORD dwCommEvent = EV_TXEMPTY | EV_RXCHAR | EV_ERR | EV_BREAK;
-    const TCHAR COMPORT[] = TEXT("\\\\.\\COM4");
+    const WCHAR COMPORT[] = L"\\\\.\\" LINK_COMPORT;
     COMMTIMEOUTS timeout = { 0 };
     COMSTAT comState = { 0 };
     DWORD   dwError = 0;
@@ -26,7 +29,7 @@ int main()
     BOOL    bWaitingOnStat = FALSE;
 
     do {
-        hComm = CreateFile(COMPORT,          //port name
+        hComm = CreateFileW(COMPORT,          //port name
             GENERIC_READ | GENERIC_WRITE,    //Read/Write
             0,                               // No Sharing
             NULL,                            // No Security
@@ -75,7 +78,7 @@ int main()
             std::cout << "Error in setting timeout of serial port" << std::endl;
             break;
         }
-        
+
         if (FALSE == PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR)) {
             std::cout << "Error in purge buffer of serial port" << std::endl;
             break;
@@ -89,12 +92,12 @@ int main()
         if (FALSE == ClearCommError(hComm, &dwError, &comState)) {
 
         }
-        
-        // Create an event object for use by WaitCommEvent. 
+
+        // Create an event object for use by WaitCommEvent.
         osEvent.hEvent = CreateEvent(
-                NULL,   // default security attributes 
-                TRUE,   // manual-reset event 
-                FALSE,  // not signaled 
+                NULL,   // default security attributes
+                TRUE,   // manual-reset event
+                FALSE,  // not signaled
                 NULL    // no name
         );
         if (osEvent.hEvent == NULL) {
@@ -103,9 +106,9 @@ int main()
         }
 
         osReader.hEvent = CreateEvent(
-            NULL,   // default security attributes 
-            TRUE,   // manual-reset event 
-            FALSE,  // not signaled 
+            NULL,   // default security attributes
+            TRUE,   // manual-reset event
+            FALSE,  // not signaled
             NULL    // no name
         );
         if (osReader.hEvent == NULL) {
@@ -114,9 +117,9 @@ int main()
         }
 
         rxProc.osWrite.hEvent = CreateEvent(
-            NULL,   // default security attributes 
-            TRUE,   // manual-reset event 
-            FALSE,  // not signaled 
+            NULL,   // default security attributes
+            TRUE,   // manual-reset event
+            FALSE,  // not signaled
             NULL    // no name
         );
         if (rxProc.osWrite.hEvent == NULL) {
@@ -167,7 +170,7 @@ int main()
                     bWaitingOnRead = TRUE;
                 }
                 else {
-                    
+
                 }
             }
 
@@ -181,7 +184,7 @@ int main()
                     if (GetOverlappedResult(hComm, &osReader, &dwRead, FALSE))
                     {
                     }
-                    else 
+                    else
                     {
                         DWORD error = GetLastError();
                         if (error != ERROR_IO_INCOMPLETE) {
@@ -203,7 +206,7 @@ int main()
             if (dwRead) {
                 RxProc(hComm, rxProc, Buffer, dwRead);
             }
-            
+
             if (bExit == TRUE) {
                 std::cout << "exit program" << std::endl;
                 break;
@@ -226,7 +229,7 @@ int main()
                if (bExit == TRUE)
                    break;
             }
-            
+
             if (bExit == TRUE) {
                 std::cout << "exit program" << std::endl;
                 break;
@@ -252,7 +255,7 @@ int main()
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
-// Tips for Getting Started: 
+// Tips for Getting Started:
 //   1. Use the Solution Explorer window to add/manage files
 //   2. Use the Team Explorer window to connect to source control
 //   3. Use the Output window to see build output and other messages

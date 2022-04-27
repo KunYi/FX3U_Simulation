@@ -6,6 +6,18 @@ the code for studying FX3U with Melsoft communcation.
 running on Windows with [com0com](https://sourceforge.net/projects/com0com/).
 
 
+---
+Work setting
+---
+
+* COM3 for GX2 Works access
+* COM4 for our FX3U simulation program (definition in code)
+
+GX2 Work <<\==>> COM3 (com0com) << bind >> COM4 (com0com) <\==> FX3U simulation Program
+
+
+if you need change COMPORT, search ***LINK_COMPORT*** in source code.
+
 Status
 ---
 testing on Windows 10 x64 21H2 (19044.1645).

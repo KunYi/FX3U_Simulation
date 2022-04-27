@@ -20,7 +20,7 @@ BYTE asc2hex(BYTE v)
     return 0;
     */
     v -= '0';
-    if (v > 10)
+    if (v > 9)
         v -= 'A' - '9' - 1;
     return v;
 
@@ -73,7 +73,6 @@ uint8_t calcChecksum(uint8_t* pB)
 
 uint16_t ReadCmdProc(uint16_t address, uint8_t len)
 {
-
     if (address >= 0x8000) {
         return 0x0800;
     }
@@ -99,7 +98,7 @@ void reponseAck(HANDLE hComm, struct RX_PROC& rp)
     DWORD dwWrite;
     buff[0] = 06;
     WriteFile(hComm, buff, 1, &dwWrite, &rp.osWrite);
-    std::cout << "<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
+    std::cout << std::endl << "<<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
 }
 
 void reponseNibbleData(HANDLE hComm, struct RX_PROC& rp, uint8_t value)
@@ -118,7 +117,7 @@ void reponseNibbleData(HANDLE hComm, struct RX_PROC& rp, uint8_t value)
     buff[5] = u16Data & 0xFF;
     WriteFile(hComm, buff, 6, &dwWrite, &rp.osWrite);
  
-    std::cout << "<<";
+    std::cout << std::endl << "<<<";
     for (uint8_t i = 0; i < 6; i++)
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
     std::cout << std::endl;
@@ -143,7 +142,7 @@ void reponseF50110(HANDLE hComm, struct RX_PROC& rp)
     buff[7] = u16Data & 0xFF;
     WriteFile(hComm, buff, 8, &dwWrite, &rp.osWrite);
 
-    std::cout << "<<";
+    std::cout << std::endl << "<<<";
     for (uint8_t i = 0; i < 8; i++)
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
     std::cout << std::endl;
@@ -165,7 +164,7 @@ void reponseF50104(HANDLE hComm, struct RX_PROC& rp)
     buff[4] = u16Data & 0xFF;
     WriteFile(hComm, buff, 5, &dwWrite, &rp.osWrite);
 
-    std::cout << "<<";
+    std::cout << std::endl << "<<<";
     for (uint8_t i = 0; i < 5; i++)
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
     std::cout << std::endl;
@@ -190,7 +189,7 @@ void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t le
     buff[len * 2 + 3] = u16Data & 0xFF;
     WriteFile(hComm, buff, (len * 2) + 4, &dwWrite, &rp.osWrite);
     
-    std::cout << "<<";
+    std::cout << std::endl << "<<<";
     for (uint16_t i = 0; i < ((len * 2) + 4); i++)
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
     std::cout << std::endl;
@@ -218,7 +217,7 @@ void reponseUINT16(HANDLE hComm, struct RX_PROC& rp, uint16_t val)
 
     WriteFile(hComm, buff, 8, &dwWrite, &rp.osWrite);
 
-    std::cout << "<<";
+    std::cout << std::endl << "<<<";
     for (uint8_t i = 0; i < 8; i++) 
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
     std::cout << std::endl;
@@ -286,14 +285,13 @@ BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len)
 
     for (DWORD i = 0; i < len; i++) {
         if (bNewLine) {
-            std::cout << ">> ";
+            std::cout << ">>>";
             bNewLine = FALSE;
         }
-        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]) << " ";
+        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
         switch (rp.State) {
         case STATE_IDLE:
             if (buff[i] == ENQ) {
-                std::cout << std::endl;
                 reponseAck(hComm, rp);
                 std::cout << std::endl;
                 bNewLine = TRUE;
@@ -318,11 +316,9 @@ BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len)
             rp.Data[rp.DataLen++] = buff[i];
             if (calcChecksum(rp.Data) == Array2UINT8(&rp.Data[rp.DataLen - 2]))
             {
-                // std::cout << "" << std::endl;
-                std::cout << std::endl;
+                ret = TRUE;
             }
             rp.State = STATE_IDLE;
-            ret = TRUE;
         }
         break;
         } /* end of swith(rp.State) */
