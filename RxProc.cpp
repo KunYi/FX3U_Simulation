@@ -10,20 +10,7 @@ struct RX_PROC rxProc;
 
 BYTE asc2hex(BYTE v)
 {
-    /*
-    if (v >= '0' && v <= '9')
-        return v - '0';
-    else if (v >= 'A' && v <= 'F')
-        return (v - 'A' + 10);
-    else if (v >= 'a' && v <= 'f')
-        return (v - 'a' + 10);
-    return 0;
-    */
-    v -= '0';
-    if (v > 9)
-        v -= 'A' - '9' - 1;
-    return v;
-
+    return (v > '9') ? v - 'A' + 10 : v - '0';
 }
 
 UINT16 hex2asc(BYTE v)
