@@ -25,7 +25,8 @@ Connection Test
 ![Result](Pictures/Run_DetectPLC_EN.png "Result")
 
 
-![Another Testing](https://youtu.be/r_XOcbTEAzA "Another testing")
+[Another Testing Video clip on Youtube](https://youtu.be/r_XOcbTEAzA "Another testing")
+
 
 Build tools
 ---
