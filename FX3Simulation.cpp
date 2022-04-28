@@ -130,6 +130,7 @@ int main()
         hArray[0] = osReader.hEvent;
         hArray[1] = osEvent.hEvent;
 
+        initSystem();
         rxProc.State = STATE_IDLE;
         rxProc.DataLen = 0;
 

@@ -23,4 +23,5 @@ struct RX_PROC {
 
 extern struct RX_PROC rxProc;
 
+void initSystem(void);
 BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len);

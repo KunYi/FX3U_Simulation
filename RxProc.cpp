@@ -8,7 +8,61 @@
 
 struct RX_PROC rxProc;
 
-BYTE asc2hex(BYTE v)
+
+const uint16_t kSpecial[128] = {
+    0x00C8, 0x5EA8, 0x0008, 0x0010, 0x1F82, 0x0020, 0x0018, 0x0003, /*   8 */
+    0x000A, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /*  16 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x000A, 0x0000, 0x0000, 0x0000, /*  24 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x003D, 0x001C, /*  32 */
+    0x0000, 0x0000, 0x0014, 0x00FF, 0x03D7, 0x0000, 0x0000, 0x0000, /*  40 */
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, /*  48 */
+    0x0000, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /*  56 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x183B, 0x0000, /*  64 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x01F4, 0x0000, /*  72 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /*  80 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /*  88 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /*  96 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0064, 0x3F68, 0x0008, 0x0000, /* 104 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, /* 112 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0DDC, 0x3DB6, 0x0000, 0x0000, /* 120 */
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0002, 0x0003, 0x0000, 0x0000, /* 128 */
+};
+
+uint16_t PLCBuffer[(16 * 1024) + 216];
+
+/* PLC code buffer*/
+uint8_t CodeBuf[(33 * 1024) + 208] = {
+    0x10, 0x00, 0xD8, 0xBA, 0x00, 0x00, 0x00, 0x00, /*   8 */
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, /*  16 */
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, /*  24 */
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, /*  32 */
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, /*  40 */
+    0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, /*  48 */
+    0xF4, 0x09, 0xFF, 0x0B, 0xF4, 0x01, 0xE7, 0x03, /*  56 */
+    0x64, 0x0E, 0xC7, 0x0E, 0xDC, 0x0E, 0xFF, 0x0E, /*  64 */
+    0x90, 0x01, 0xFE, 0x03, 0x00, 0x00, 0x00, 0x00, /*  72 */
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /*  80 */
+    0x83, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /*  88 */
+    0x00, 0x00, 0x00, 0x00, 0X0F, 0X00, 0XFF, 0XFF, /*  96 */
+    0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, /* 104 */
+    0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, 0XFF, /* 112 */
+    0XFF, 0XFF, 0XFF, 0XFF, 0XFF,                   /* 117 */
+};
+
+uint8_t Ex8000h[1024];
+
+void initSystem(void)
+{
+    for (uint8_t i = 0; i < 126; i++)
+    {   // offset 3KW
+        PLCBuffer[0x0C00 + i] = kSpecial[i];
+    }
+    
+    PLCBuffer[0x2000] = CodeBuf[52] * 256;
+    PLCBuffer[0x2000] += CodeBuf[53];
+}
+
+uint8_t asc2hex(BYTE v)
 {
     return (v > '9') ? v - 'A' + 10 : v - '0';
 }
@@ -66,11 +120,12 @@ uint16_t ReadCmdProc(uint16_t address, uint8_t len)
     else if (address >= 0x0E00) {
         switch (address) {
         case 0x0E02: // type, 0x5EA8
-            return 0xA85E; // 0xA85E for FX3U, 0x0800 for FX1, 0x5EF6 fo FX1N
-        case 0x0E00:
-            break;
-        case 0x0ECA:
-            return 0x683F;
+        case 0x0ECA: 
+        case 0x0E00: {
+            const uint8_t* pByte = (uint8_t*)kSpecial;
+            // 0x5EA8 for FX3U, 0x0800 for FX1, 0x5EF6 fo FX1N
+            return  *(reinterpret_cast<const uint16_t*>(pByte+(address-0xE00))); 
+        }
         default:
             return 0xA85E;
         }
@@ -83,9 +138,20 @@ void reponseAck(HANDLE hComm, struct RX_PROC& rp)
 {
     uint8_t buff[1];
     DWORD dwWrite;
-    buff[0] = 06;
+    buff[0] = ACK;
     WriteFile(hComm, buff, 1, &dwWrite, &rp.osWrite);
     std::cout << std::endl << "<<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
+    std::cout << std::endl;
+}
+
+void reponseNAck(HANDLE hComm, struct RX_PROC& rp)
+{
+    uint8_t buff[1];
+    DWORD dwWrite;
+    buff[0] = NACK;
+    WriteFile(hComm, buff, 1, &dwWrite, &rp.osWrite);
+    std::cout << std::endl << "<<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
+    std::cout << std::endl;
 }
 
 void reponseNibbleData(HANDLE hComm, struct RX_PROC& rp, uint8_t value)
@@ -157,6 +223,34 @@ void reponseF50104(HANDLE hComm, struct RX_PROC& rp)
     std::cout << std::endl;
 }
 
+void reponseCodeBuff(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
+{
+    uint8_t buff[512];
+    uint8_t chksum;
+    uint16_t u16Data;
+    DWORD dwWrite;
+    uint16_t i;
+
+    buff[0] = STX;
+    for (i = 0; i < len; i++) {
+        u16Data = hex2asc(CodeBuf[i]);
+        buff[(i * 2) + 1] = (u16Data / 0x100);
+        buff[(i * 2) + 2] = (u16Data % 0x100);
+    }
+
+    buff[i * 2 + 1] = ETX;
+    chksum = calcChecksum(&buff[1]);
+    u16Data = hex2asc(chksum);
+    buff[i * 2 + 2] = (u16Data / 0x100);
+    buff[i * 2 + 3] = (u16Data % 0x100);
+    WriteFile(hComm, buff, (i * 2) + 4, &dwWrite, &rp.osWrite);
+
+    std::cout << std::endl << "<<<";
+    for (uint16_t i = 0; i < ((len * 2) + 4); i++)
+        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+    std::cout << std::endl;
+}
+
 void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
 {
     uint8_t buff[512];
@@ -172,8 +266,8 @@ void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t le
     buff[len * 2 + 1] = ETX;
     chksum = calcChecksum(&buff[1]);
     u16Data = hex2asc(chksum);
-    buff[len * 2 + 2] = (u16Data >> 8);
-    buff[len * 2 + 3] = u16Data & 0xFF;
+    buff[len * 2 + 2] = (u16Data / 0x100);
+    buff[len * 2 + 3] = (u16Data % 0x100);
     WriteFile(hComm, buff, (len * 2) + 4, &dwWrite, &rp.osWrite);
     
     std::cout << std::endl << "<<<";
@@ -188,19 +282,20 @@ void reponseUINT16(HANDLE hComm, struct RX_PROC& rp, uint16_t val)
     uint8_t chksum;
     uint16_t u16Data;
     DWORD dwWrite;
+    uint8_t* pData = reinterpret_cast<uint8_t*>(&val);
 
     buff[0] = STX;
-    u16Data = hex2asc(val >> 8);
-    buff[1] = (u16Data >> 8);
-    buff[2] = (u16Data & 0xFF);
-    u16Data = hex2asc(val & 0xFF);
-    buff[3] = (u16Data >> 8);
-    buff[4] = (u16Data & 0xFF);
+    u16Data = hex2asc(*pData);
+    buff[1] = (u16Data / 0x100);
+    buff[2] = (u16Data % 0x100);
+    u16Data = hex2asc(*(pData+1));
+    buff[3] = (u16Data / 0x100);
+    buff[4] = (u16Data % 0x100);
     buff[5] = ETX;
     chksum = calcChecksum(&buff[1]);
     u16Data = hex2asc(chksum);
-    buff[6] = (u16Data >> 8);
-    buff[7] = (u16Data & 0xFF);
+    buff[6] = (u16Data / 0x100);
+    buff[7] = (u16Data % 0x100);
 
     WriteFile(hComm, buff, 8, &dwWrite, &rp.osWrite);
 
@@ -226,22 +321,27 @@ void DispatchCmd(HANDLE hComm, struct RX_PROC& rp)
         break;
 
     case 'E': {
-        uint16_t cmd = (rp.Data[1] << 8) + rp.Data[2];
+        const uint16_t cmd = (rp.Data[1] * 0x100) + rp.Data[2];
+        // E01, read
         if (cmd == 0x3031) {
             uint16_t address = Array2UINT16(&rp.Data[3]);
             uint8_t len = Array2UINT8(&rp.Data[7]);
-            if (len == 2) {
-                uint16_t value = ReadCmdProc(address, len);
-                reponseUINT16(hComm, rp, value);
-            }
-            else {
-                reponseArray(hComm, rp, address, len);
-            }
+            if (address >= 0x8000)
+                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+            else
+                std::cout << "not implement" << std::endl;
         }
+        // E00, write
         else if (cmd == 0x3030) {
             uint16_t address = Array2UINT16(&rp.Data[3]);
             uint8_t len = Array2UINT8(&rp.Data[7]);
-            reponseArray(hComm, rp, address, len); // len max 254(0xFE) + 4 (STX, EXT, CHKSUM), buffer 512
+            if (address >= 0x8000)
+                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+            else
+                std::cout << "not implement" << std::endl;
+        }
+        else if ((cmd & 0xFF00) == 0x4300) {
+            reponseNAck(hComm, rp);
         }
         break;
     }
@@ -280,7 +380,6 @@ BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len)
         case STATE_IDLE:
             if (buff[i] == ENQ) {
                 reponseAck(hComm, rp);
-                std::cout << std::endl;
                 bNewLine = TRUE;
             }
             if (buff[i] == STX) {
