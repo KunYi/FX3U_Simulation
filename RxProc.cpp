@@ -118,16 +118,9 @@ void InputLog(uint8_t buff[], uint16_t len)
 {
     for (uint16_t i = 0; i < len; i++) {
 #if PRINT_ASCII_MODE
-        if (i == 0) {
-            if (buff[i] == 0x05) std::cout << "ENQ";
-            else if (buff[i] == 0x02) std::cout << "STX,";
-            else if (buff[i] == 0x15) std::cout << "NACK";
-        }
-        else {
-            if (buff[i] == 0x03) std::cout << ",ETX,";
-            else
-                std::cout << buff[i];
-        }
+        if (buff[i] == 0x03) std::cout << ",ETX,";
+        else
+          std::cout << buff[i];
 #else
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
 #endif
@@ -335,43 +328,104 @@ void reponseUINT16(HANDLE hComm, struct RX_PROC& rp, uint16_t val)
     OutputLog(buff, 8);
 }
 
+
+void procBasicReadCmd(HANDLE hComm, struct RX_PROC& rp)
+{
+    uint16_t address = Array2UINT16(&rp.Data[1]);
+    uint8_t len = Array2UINT8(&rp.Data[5]);
+    if (address >= 0x0E00) {
+        reponseSpecialArray(hComm, rp, (address - 0x0E00), len);
+        return;
+    }
+    std::cout << "not implement" << std::endl;
+}
+
+void procBasicWriteCmd(HANDLE hComm, struct RX_PROC& rp)
+{
+    uint8_t buff[256];
+    uint16_t address = Array2UINT16(&rp.Data[1]);
+    uint8_t len = Array2UINT8(&rp.Data[5]);
+    uint16_t i;
+
+    if (static_cast<uint32_t>(len * 2) > (rp.DataLen - 10)) {
+        std::cout << "data length error" << std::endl;
+        return;
+    }
+    for (i = 0; i < len; i++) {
+        buff[i] = Array2UINT8(&rp.Data[(i * 2) + 7]);
+    }
+
+    reponseAck(hComm, rp);
+}
+
+void procExtensionCmd(HANDLE hComm, struct RX_PROC& rp)
+{
+    if (rp.Data[1] == '0') 
+    {
+        /* 'E00' Read PLC confiuration */
+        if (rp.Data[2] == '0') {
+            uint16_t address = Array2UINT16(&rp.Data[3]);
+            uint8_t len = Array2UINT8(&rp.Data[7]);
+            if (address >= 0x8000) {
+                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                return;
+            }
+        }
+        /* 'E01' for Read PLC code */
+        else if (rp.Data[2] == '1') {
+            uint16_t address = Array2UINT16(&rp.Data[3]);
+            uint8_t len = Array2UINT8(&rp.Data[7]);
+            if (address >= 0x8000) {
+                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                return;
+            }
+        }
+    }
+    else if (rp.Data[1] == '1') {
+        /* 'E10' for Write PLC confiuration */
+        if (rp.Data[2] == '0') {
+            uint16_t address = Array2UINT16(&rp.Data[3]);
+            uint8_t len = Array2UINT8(&rp.Data[7]);
+            if (address >= 0x8000) {
+                //reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                reponseAck(hComm, rp);
+                return;
+            }
+        }
+        /* 'E11' for Write PLC code */
+        else if (rp.Data[2] == '1') {
+            uint16_t address = Array2UINT16(&rp.Data[3]);
+            uint8_t len = Array2UINT8(&rp.Data[7]);
+            if (address >= 0x8000) {
+                //reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                reponseAck(hComm, rp);
+                return;
+            }
+        }
+    }
+    /* 'E7 for force set bit */
+    else if (rp.Data[1] == '7') {
+        // return;
+    }
+    /* 'E7 for force reset bit */
+    else if (rp.Data[1] == '8') {
+        // return;
+    }
+    std::cout << "not implement" << std::endl;
+}
+
 void DispatchCmd(HANDLE hComm, struct RX_PROC& rp)
 {
     switch (rp.Data[0]) {
-    case '0': {
-        uint16_t address = Array2UINT16(&rp.Data[1]);
-        uint8_t len = Array2UINT8(&rp.Data[5]);
-        if (address >= 0x0E00) {
-            reponseSpecialArray(hComm, rp, (address - 0x0E00), len);
-        }
-    }
+    case '0': 
+        procBasicReadCmd(hComm, rp);
         break;
     case '1':
+        procBasicWriteCmd(hComm, rp);
         break;
 
     case 'E': {
-        const uint16_t cmd = (rp.Data[1] * 0x100) + rp.Data[2];
-        // E01, read
-        if (cmd == 0x3031) {
-            uint16_t address = Array2UINT16(&rp.Data[3]);
-            uint8_t len = Array2UINT8(&rp.Data[7]);
-            if (address >= 0x8000)
-                reponseCodeBuff(hComm, rp, address - 0x8000, len);
-            else
-                std::cout << "not implement" << std::endl;
-        }
-        // E00, write
-        else if (cmd == 0x3030) {
-            uint16_t address = Array2UINT16(&rp.Data[3]);
-            uint8_t len = Array2UINT8(&rp.Data[7]);
-            if (address >= 0x8000)
-                reponseCodeBuff(hComm, rp, address - 0x8000, len);
-            else
-                std::cout << "not implement" << std::endl;
-        }
-        else if ((cmd & 0xFF00) == 0x4300) {
-            reponseNAck(hComm, rp);
-        }
+        procExtensionCmd(hComm, rp);
         break;
     }
     case 'F': {

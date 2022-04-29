@@ -15,7 +15,7 @@ enum RX_STATE {
 
 struct RX_PROC {
     RX_STATE State;
-    UINT32   DataLen;
+    uint32_t DataLen;
     BYTE     Data[256];
     OVERLAPPED osWrite;
     DWORD    LastTick;

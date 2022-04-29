@@ -12,7 +12,8 @@
 
 int main()
 {
-    std::cout << "FX3 Simulation Application\n";
+    std::cout << "FX3 Simulation Application" << std::endl;
+    std::cout << "press 'ESC' key for quit"  << std::endl;
 
     HANDLE hComm;
     DCB dcb;
