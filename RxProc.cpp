@@ -117,8 +117,16 @@ uint8_t calcChecksum(uint8_t* pB)
 void InputLog(uint8_t buff[], uint16_t len)
 {
     for (uint16_t i = 0; i < len; i++) {
+
 #if PRINT_ASCII_MODE
-        if (buff[i] == 0x03) std::cout << ",ETX,";
+        if (i == 0 && len == 1) {
+            if (buff[i] == 0x05) std::cout << "ENQ";
+            else if (buff[i] == 0x02) std::cout << "STX,";
+            else if (buff[i] == 0x15) std::cout << "NACK";
+            else
+                std::cout << buff[i];
+        }
+        else if (buff[i] == 0x03) std::cout << ",ETX,";
         else
           std::cout << buff[i];
 #else
@@ -262,11 +270,11 @@ void reponseSpecialArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uin
     uint16_t u16Data;
     DWORD dwWrite;
     uint16_t i;
-    const uint8_t* pByte = (uint8_t*)kSpecial;
+    const uint8_t* pByte = reinterpret_cast<const uint8_t*>(&kSpecial[0]) + address;
 
     buff[0] = STX;
     for (i = 0; i < len; i++) {
-        u16Data = hex2asc(*(pByte + address + i));
+        u16Data = hex2asc(*(pByte + i));
         buff[i * 2 + 1] = u16Data / 0x100;
         buff[i * 2 + 2] = u16Data % 0x100;
     }
@@ -367,7 +375,7 @@ void procExtensionCmd(HANDLE hComm, struct RX_PROC& rp)
             uint16_t address = Array2UINT16(&rp.Data[3]);
             uint8_t len = Array2UINT8(&rp.Data[7]);
             if (address >= 0x8000) {
-                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                reponseSpecialArray(hComm, rp, address - 0x8000, len);
                 return;
             }
         }
@@ -376,7 +384,7 @@ void procExtensionCmd(HANDLE hComm, struct RX_PROC& rp)
             uint16_t address = Array2UINT16(&rp.Data[3]);
             uint8_t len = Array2UINT8(&rp.Data[7]);
             if (address >= 0x8000) {
-                reponseCodeBuff(hComm, rp, address - 0x8000, len);
+                reponseSpecialArray(hComm, rp, address - 0x8000, len);
                 return;
             }
         }
