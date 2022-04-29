@@ -6,6 +6,8 @@
 #include <iomanip>
 #include "RxProc.h"
 
+#define PRINT_ASCII_MODE    (1)
+
 struct RX_PROC rxProc;
 
 
@@ -112,11 +114,46 @@ uint8_t calcChecksum(uint8_t* pB)
     return (chksum + ETX);
 }
 
+void InputLog(uint8_t buff[], uint16_t len)
+{
+    for (uint16_t i = 0; i < len; i++) {
+#if PRINT_ASCII_MODE
+        if (i == 0) {
+            if (buff[i] == 0x05) std::cout << "ENQ";
+            else if (buff[i] == 0x02) std::cout << "STX,";
+            else if (buff[i] == 0x15) std::cout << "NACK";
+        }
+        else {
+            if (buff[i] == 0x03) std::cout << ",ETX,";
+            else
+                std::cout << buff[i];
+        }
+#else
+        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+#endif
+    }
+}
+
 void OutputLog(uint8_t buff[], uint16_t len)
 {
-    std::cout << std::endl << "<<<";
-    for (uint8_t i = 0; i < len; i++)
+    std::cout << "<<<";
+
+    for (uint16_t i = 0; i < len; i++) {
+#if PRINT_ASCII_MODE
+        if (i == 0) {
+            if (buff[i] == 0x06) std::cout << "ACK";
+            else if (buff[i] == 0x02) std::cout << "STX,";
+            else if (buff[i] == 0x15) std::cout << "NACK";
+        }
+        else {
+            if (buff[i] == 0x03) std::cout << ",ETX,";
+            else
+                std::cout << buff[i];
+        }
+#else
         std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+#endif
+    }
     std::cout << std::endl;
 }
 
@@ -367,14 +404,17 @@ BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len)
             std::cout << ">>>";
             bNewLine = FALSE;
         }
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+        //std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
         switch (rp.State) {
         case STATE_IDLE:
             if (buff[i] == ENQ) {
+                InputLog(&buff[i], 1);
+                std::cout << std::endl;
                 reponseAck(hComm, rp);
                 bNewLine = TRUE;
             }
             if (buff[i] == STX) {
+                InputLog(&buff[i], 1);
                 rp.State = STATE_RXPKT;
                 rp.DataLen = 0;
             }
@@ -394,6 +434,8 @@ BOOL RxProc(HANDLE hComm, struct RX_PROC& rp, BYTE* buff, DWORD len)
             rp.Data[rp.DataLen++] = buff[i];
             if (calcChecksum(rp.Data) == Array2UINT8(&rp.Data[rp.DataLen - 2]))
             {
+                InputLog(rp.Data, rp.DataLen);
+                std::cout << std::endl;
                 ret = TRUE;
             }
             rp.State = STATE_IDLE;
