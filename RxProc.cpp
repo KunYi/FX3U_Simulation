@@ -112,14 +112,22 @@ uint8_t calcChecksum(uint8_t* pB)
     return (chksum + ETX);
 }
 
+void OutputLog(uint8_t buff[], uint16_t len)
+{
+    std::cout << std::endl << "<<<";
+    for (uint8_t i = 0; i < len; i++)
+        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+    std::cout << std::endl;
+}
+
 void reponseAck(HANDLE hComm, struct RX_PROC& rp)
 {
     uint8_t buff[1];
     DWORD dwWrite;
     buff[0] = ACK;
     WriteFile(hComm, buff, 1, &dwWrite, &rp.osWrite);
-    std::cout << std::endl << "<<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
-    std::cout << std::endl;
+
+    OutputLog(buff, 1);
 }
 
 void reponseNAck(HANDLE hComm, struct RX_PROC& rp)
@@ -128,8 +136,8 @@ void reponseNAck(HANDLE hComm, struct RX_PROC& rp)
     DWORD dwWrite;
     buff[0] = NACK;
     WriteFile(hComm, buff, 1, &dwWrite, &rp.osWrite);
-    std::cout << std::endl << "<<< " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[0]);
-    std::cout << std::endl;
+
+    OutputLog(buff, 1);
 }
 
 void reponseNibbleData(HANDLE hComm, struct RX_PROC& rp, uint8_t value)
@@ -148,10 +156,7 @@ void reponseNibbleData(HANDLE hComm, struct RX_PROC& rp, uint8_t value)
     buff[5] = u16Data & 0xFF;
     WriteFile(hComm, buff, 6, &dwWrite, &rp.osWrite);
  
-    std::cout << std::endl << "<<<";
-    for (uint8_t i = 0; i < 6; i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, 6);
 }
 
 void reponseF50110(HANDLE hComm, struct RX_PROC& rp)
@@ -173,10 +178,7 @@ void reponseF50110(HANDLE hComm, struct RX_PROC& rp)
     buff[7] = u16Data & 0xFF;
     WriteFile(hComm, buff, 8, &dwWrite, &rp.osWrite);
 
-    std::cout << std::endl << "<<<";
-    for (uint8_t i = 0; i < 8; i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, 8);
 }
 
 void reponseF50104(HANDLE hComm, struct RX_PROC& rp)
@@ -195,10 +197,7 @@ void reponseF50104(HANDLE hComm, struct RX_PROC& rp)
     buff[4] = u16Data & 0xFF;
     WriteFile(hComm, buff, 5, &dwWrite, &rp.osWrite);
 
-    std::cout << std::endl << "<<<";
-    for (uint8_t i = 0; i < 5; i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, 8);
 }
 
 void reponseCodeBuff(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
@@ -223,10 +222,7 @@ void reponseCodeBuff(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t
     buff[i * 2 + 3] = (u16Data % 0x100);
     WriteFile(hComm, buff, (i * 2) + 4, &dwWrite, &rp.osWrite);
 
-    std::cout << std::endl << "<<<";
-    for (uint16_t i = 0; i < ((len * 2) + 4); i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, (len * 2) + 4);
 }
 
 void reponseSpecialArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
@@ -251,10 +247,7 @@ void reponseSpecialArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uin
     buff[i * 2 + 3] = (u16Data % 0x100);
     WriteFile(hComm, buff, (i * 2) + 4, &dwWrite, &rp.osWrite);
 
-    std::cout << std::endl << "<<<";
-    for (uint16_t i = 0; i < ((len * 2) + 4); i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, (len * 2) + 4);
 }
 
 void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
@@ -276,10 +269,7 @@ void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t le
     buff[len * 2 + 3] = (u16Data % 0x100);
     WriteFile(hComm, buff, (len * 2) + 4, &dwWrite, &rp.osWrite);
     
-    std::cout << std::endl << "<<<";
-    for (uint16_t i = 0; i < ((len * 2) + 4); i++)
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, (len * 2) + 4);
 }
 
 void reponseUINT16(HANDLE hComm, struct RX_PROC& rp, uint16_t val)
@@ -305,10 +295,7 @@ void reponseUINT16(HANDLE hComm, struct RX_PROC& rp, uint16_t val)
 
     WriteFile(hComm, buff, 8, &dwWrite, &rp.osWrite);
 
-    std::cout << std::endl << "<<<";
-    for (uint8_t i = 0; i < 8; i++) 
-        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
-    std::cout << std::endl;
+    OutputLog(buff, 8);
 }
 
 void DispatchCmd(HANDLE hComm, struct RX_PROC& rp)
