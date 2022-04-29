@@ -112,28 +112,6 @@ uint8_t calcChecksum(uint8_t* pB)
     return (chksum + ETX);
 }
 
-uint16_t ReadCmdProc(uint16_t address, uint8_t len)
-{
-    if (address >= 0x8000) {
-        return 0x0800;
-    }
-    else if (address >= 0x0E00) {
-        switch (address) {
-        case 0x0E02: // type, 0x5EA8
-        case 0x0ECA: 
-        case 0x0E00: {
-            const uint8_t* pByte = (uint8_t*)kSpecial;
-            // 0x5EA8 for FX3U, 0x0800 for FX1, 0x5EF6 fo FX1N
-            return  *(reinterpret_cast<const uint16_t*>(pByte+(address-0xE00))); 
-        }
-        default:
-            return 0xA85E;
-        }
-    }
-
-    return 0;
-}
-
 void reponseAck(HANDLE hComm, struct RX_PROC& rp)
 {
     uint8_t buff[1];
@@ -251,6 +229,34 @@ void reponseCodeBuff(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t
     std::cout << std::endl;
 }
 
+void reponseSpecialArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
+{
+    uint8_t buff[512];
+    uint8_t chksum;
+    uint16_t u16Data;
+    DWORD dwWrite;
+    uint16_t i;
+    const uint8_t* pByte = (uint8_t*)kSpecial;
+
+    buff[0] = STX;
+    for (i = 0; i < len; i++) {
+        u16Data = hex2asc(*(pByte + address + i));
+        buff[i * 2 + 1] = u16Data / 0x100;
+        buff[i * 2 + 2] = u16Data % 0x100;
+    }
+    buff[i * 2 + 1] = ETX;
+    chksum = calcChecksum(&buff[1]);
+    u16Data = hex2asc(chksum);
+    buff[i * 2 + 2] = (u16Data / 0x100);
+    buff[i * 2 + 3] = (u16Data % 0x100);
+    WriteFile(hComm, buff, (i * 2) + 4, &dwWrite, &rp.osWrite);
+
+    std::cout << std::endl << "<<<";
+    for (uint16_t i = 0; i < ((len * 2) + 4); i++)
+        std::cout << " " << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buff[i]);
+    std::cout << std::endl;
+}
+
 void reponseArray(HANDLE hComm, struct RX_PROC& rp, uint16_t address, uint8_t len)
 {
     uint8_t buff[512];
@@ -311,9 +317,8 @@ void DispatchCmd(HANDLE hComm, struct RX_PROC& rp)
     case '0': {
         uint16_t address = Array2UINT16(&rp.Data[1]);
         uint8_t len = Array2UINT8(&rp.Data[5]);
-        uint16_t value = ReadCmdProc(address, len);
-        if (len == 2) {
-            reponseUINT16(hComm, rp, value);
+        if (address >= 0x0E00) {
+            reponseSpecialArray(hComm, rp, (address - 0x0E00), len);
         }
     }
         break;
